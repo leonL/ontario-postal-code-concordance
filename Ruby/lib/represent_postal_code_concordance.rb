@@ -17,10 +17,10 @@ class RepresentPostalCodeConcordance
     response.response.code == "404"
   end
 
-  def ontario_ridings
-    @ontario_ridings ||= begin
+  def provincial_ridings(province)
+    @provincial_ridings ||= begin
       ridings = response_boundaries.find_all do |boundary|
-        boundary['related']['boundary_set_url'] == "/boundary-sets/ontario-electoral-districts/"
+        boundary['related']['boundary_set_url'] == "/boundary-sets/#{province}-electoral-districts/"
       end
       ridings.map do |riding|
         {name: riding['name'], id: riding['external_id']}

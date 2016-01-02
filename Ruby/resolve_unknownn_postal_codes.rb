@@ -10,13 +10,13 @@ class ConcordanceWriter
   end
 
   def initialize
-    @geo_concordance = open_output_csv('ontario_postal_code_geo_concordance.csv')
-    @riding_concordance = open_output_csv('ontario_postal_code_ridings_concordance.csv')
-    @ward_concordance = open_output_csv('ontario_postal_code_wards_concordance.csv')
+    @riding_concordance = open_output_csv('man_sask_postal_code_ridings_concordance.csv')
     @failed_codes = open_output_csv('failed_postal_codes.csv')
+    # @geo_concordance = open_output_csv('ontario_postal_code_geo_concordance.csv')
+    # @ward_concordance = open_output_csv('ontario_postal_code_wards_concordance.csv')
 
     at_exit do
-     close_csvs(@geo_concordance, @riding_concordance, @ward_concordance, @failed_codes)
+     close_csvs(@riding_concordance, @failed_codes)
      File.open('current_pcode_on_program_exit.txt', 'w'){ |f| f.write(@current_src_postal_code) } if @current_src_postal_code
     end
   end
@@ -24,6 +24,7 @@ class ConcordanceWriter
   def fetch_data_and_write_csv
     source_postal_codes.each do |source_record|
       @current_src_postal_code = source_record[:postal_code]
+      @current_province = source_record[:province].downcase
       concordance = fetch_data_for_postal_code(@current_src_postal_code)
 
       if concordance.not_found?
@@ -44,25 +45,27 @@ private
   end
 
   def cache_concordance_values(pcode, concordance)
-    insert_geo_csv_row(pcode, concordance)
+    ridings = concordance.provincial_ridings(@current_province)
 
-    concordance.ontario_ridings.each do |riding|
-      insert_riding_csv_row(pcode, riding)
+    if ridings.empty?
+      puts "The postal code #{@current_src_postal_code} doesn't have any ridings for #{@current_province} on the Represent API."
+      @failed_codes << [@current_src_postal_code]
+    else
+      ridings.each do |riding|
+        insert_riding_csv_row(pcode, riding)
+      end
     end
 
-    concordance.wards.each do |ward|
-      insert_ward_csv_row(pcode, ward)
-    end
+  end
+
+  def insert_riding_csv_row(pcode, riding)
+    row = [pcode, @current_province, riding[:name], riding[:id ]]
+    @riding_concordance << row; log_insert(row, 'riding')
   end
 
   def insert_geo_csv_row(pcode, concord)
     row = [pcode, concord.latitude, concord.longitude, concord.city, concord.province]
     @geo_concordance << row; log_insert(row, 'geo')
-  end
-
-  def insert_riding_csv_row(pcode, riding)
-    row = [pcode, riding[:id], riding[:name]]
-    @riding_concordance << row; log_insert(row, 'riding')
   end
 
   def insert_ward_csv_row(pcode, ward)
@@ -81,7 +84,7 @@ private
   end
 
   def source_codes_path
-    self.class.source_dir + 'ontario_postal_codes.csv'
+    self.class.source_dir + 'man_sask_postal_codes.csv'
   end
 
   def open_output_csv(filename)
