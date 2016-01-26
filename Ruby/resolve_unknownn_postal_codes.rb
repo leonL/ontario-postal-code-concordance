@@ -29,7 +29,7 @@ class ConcordanceWriter
 
       if concordance.not_found?
         puts "Something went wrong requesting the postal code #{@current_src_postal_code} from the Represent API."
-        @failed_codes << [@current_src_postal_code]
+        @failed_codes << [@current_src_postal_code, @current_province]
       else
         cache_concordance_values(@current_src_postal_code, concordance)
       end
