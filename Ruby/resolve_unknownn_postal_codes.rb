@@ -49,7 +49,7 @@ private
 
     if ridings.empty?
       puts "The postal code #{@current_src_postal_code} doesn't have any ridings for #{@current_province} on the Represent API."
-      @failed_codes << [@current_src_postal_code]
+      @failed_codes << [@current_src_postal_code, @current_province]
     else
       ridings.each do |riding|
         insert_riding_csv_row(pcode, riding)
